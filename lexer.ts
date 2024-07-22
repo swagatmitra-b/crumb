@@ -210,34 +210,6 @@ while (true) {
   if (!token.literal) break;
 }
 
-// export enum TokenType {
-//   SAY = "SAY",
-//   INVAR = "INVAR",
-//   FUN = "FUN",
-//   IDENTIFIER = "IDENTIFIER",
-//   NUMBER = "NUMBER",
-//   ASSIGN = "ASSIGN",
-//   PLUS = "PLUS",
-//   L_PAREN = "L_PAREN",
-//   R_PAREN = "R_PAREN",
-//   L_BRACE = "L_CURL",
-//   R_BRACE = "R_CURL",
-//   COMMA = "COMMA",
-//   SCOLON = "SCOLON",
-//   ILLEGAL = "ILLEGAL",
-//   EOF = "EOF",
-// }
-
-// const keywords: Record<string, TokenType> = {
-//   say: TokenType.SAY,
-//   invar: TokenType.INVAR,
-// };
-
-// export interface Token {
-//   literal: string;
-//   type: TokenType;
-// }
-
 // function getType(lexeme: string): TokenType {
 //   switch (lexeme) {
 //     case "=":
