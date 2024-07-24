@@ -17,8 +17,8 @@ export enum TokenType {
   EQUAL = "EQUAL",
   NOTEQ = "NOTEQ",
   ASTERISK = "ASTERISK",
-  LT = "<",
-  GT = ">",
+  LT = "LT",
+  GT = "GT",
   L_PAREN = "L_PAREN",
   R_PAREN = "R_PAREN",
   L_BRACE = "L_BRACE",
@@ -29,12 +29,12 @@ export enum TokenType {
   EOF = "EOF",
 }
 
-type Token = {
+export type Token = {
   literal: string;
   type: TokenType;
 };
 
-class Lexer {
+export class Lexer {
   input: string;
   pos: number;
   readPos: number;
@@ -64,57 +64,57 @@ class Lexer {
 
     switch (this.char) {
       case "+":
-        token = this.newToken(TokenType.PLUS, this.char);
+        token = this.#newToken(TokenType.PLUS, this.char);
         break;
       case "=":
         if (this.peekChar() == "=") {
           let char = this.char;
           this.readChar();
-          token = this.newToken(TokenType.EQUAL, this.char + char);
-        } else token = this.newToken(TokenType.ASSIGN, this.char);
+          token = this.#newToken(TokenType.EQUAL, this.char + char);
+        } else token = this.#newToken(TokenType.ASSIGN, this.char);
         break;
       case ")":
-        token = this.newToken(TokenType.R_PAREN, this.char);
+        token = this.#newToken(TokenType.R_PAREN, this.char);
         break;
       case "(":
-        token = this.newToken(TokenType.L_PAREN, this.char);
+        token = this.#newToken(TokenType.L_PAREN, this.char);
         break;
       case "}":
-        token = this.newToken(TokenType.R_BRACE, this.char);
+        token = this.#newToken(TokenType.R_BRACE, this.char);
         break;
       case "{":
-        token = this.newToken(TokenType.L_BRACE, this.char);
+        token = this.#newToken(TokenType.L_BRACE, this.char);
         break;
       case ",":
-        token = this.newToken(TokenType.COMMA, this.char);
+        token = this.#newToken(TokenType.COMMA, this.char);
         break;
       case ";":
-        token = this.newToken(TokenType.SCOLON, this.char);
+        token = this.#newToken(TokenType.SCOLON, this.char);
         break;
       case "<":
-        token = this.newToken(TokenType.LT, "");
+        token = this.#newToken(TokenType.LT, this.char);
         break;
       case ">":
-        token = this.newToken(TokenType.GT, "");
+        token = this.#newToken(TokenType.GT, this.char);
         break;
       case "-":
-        token = this.newToken(TokenType.MINUS, "");
+        token = this.#newToken(TokenType.MINUS, this.char);
         break;
       case "*":
-        token = this.newToken(TokenType.ASTERISK, "");
+        token = this.#newToken(TokenType.ASTERISK, this.char);
         break;
       case "/":
-        token = this.newToken(TokenType.SLASH, "");
+        token = this.#newToken(TokenType.SLASH, this.char);
         break;
       case "!":
         if (this.peekChar() == "=") {
           let char = this.char;
           this.readChar();
-          token = this.newToken(TokenType.NOTEQ, this.char + char);
-        } else token = this.newToken(TokenType.ASSIGN, this.char);
+          token = this.#newToken(TokenType.NOTEQ, this.char + char);
+        } else token = this.#newToken(TokenType.ASSIGN, this.char);
         break;
       case "\0":
-        token = this.newToken(TokenType.EOF, "");
+        token = this.#newToken(TokenType.EOF, "");
         break;
       default:
         if (this.isLetter(this.char)) {
@@ -132,7 +132,7 @@ class Lexer {
             literal: value,
           };
         } else {
-          token = this.newToken(TokenType.ILLEGAL, this.char);
+          token = this.#newToken(TokenType.ILLEGAL, this.char);
         }
     }
     this.readChar();
@@ -168,7 +168,7 @@ class Lexer {
     return char >= "0" && char <= "9";
   }
 
-  newToken(tokenType: TokenType, value: string) {
+  #newToken(tokenType: TokenType, value: string) {
     return { type: tokenType, literal: value };
   }
 
@@ -202,13 +202,13 @@ const keywords: Record<string, TokenType> = {
   return: TokenType.RETURN,
 };
 
-const lexeme = new Lexer("say love = 23 + a");
+// const lexeme = new Lexer("say love = 23 + a");
 
-while (true) {
-  let token = lexeme.nextToken();
-  console.log(token);
-  if (!token.literal) break;
-}
+// while (true) {
+//   let token = lexeme.nextToken();
+//   console.log(token);
+//   if (!token.literal) break;
+// }
 
 // function getType(lexeme: string): TokenType {
 //   switch (lexeme) {
@@ -229,7 +229,7 @@ while (true) {
 //     case ";":
 //       return TokenType.SCOLON;
 //     default:
-//       if (/^[0-9]+$/.test(lexeme)) 
+//       if (/^[0-9]+$/.test(lexeme))
 //         return TokenType.NUMBER;
 //        else if (keywords[lexeme]) return keywords[lexeme];
 //       else return TokenType.IDENTIFIER;
@@ -258,5 +258,3 @@ while (true) {
 // }
 
 // export const TokenString = tokenize("invar fifty = 2 + a");
-
-// console.log(TokenString);
