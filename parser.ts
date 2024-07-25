@@ -1,6 +1,6 @@
 import { Token, Lexer, TokenType } from "./lexer";
 import { ASTNode, Statement, Expression } from "./ast";
-import { SayStatement, ReturnStatement } from "./statements";
+import { SayStatement, ReturnStatement, BlockStatement } from "./statements";
 import {
   Identifier,
   ExpressionStatement,
@@ -9,6 +9,8 @@ import {
   InfixExpression,
   OP_PREC,
   precedenceTable,
+  Boolean,
+  IfStatement,
 } from "./expressions";
 
 class Program implements ASTNode {
@@ -63,9 +65,19 @@ class Parser {
     this.prefixParseFuncs = {};
     this.infixParseFuncs = {};
     this.registerPrefix(TokenType.IDENTIFIER, this.parseIdentifier.bind(this));
+    this.registerPrefix(TokenType.IF, this.parseIfExpression.bind(this));
     this.registerPrefix(TokenType.NUMBER, this.parseNumberLiteral.bind(this));
     this.registerPrefix(TokenType.BANG, this.parsePrefixExpression.bind(this));
     this.registerPrefix(TokenType.MINUS, this.parsePrefixExpression.bind(this));
+    this.registerPrefix(TokenType.TRUE, this.parseBooleanExpression.bind(this));
+    this.registerPrefix(
+      TokenType.FALSE,
+      this.parseBooleanExpression.bind(this)
+    );
+    this.registerPrefix(
+      TokenType.L_PAREN,
+      this.parseGroupedExpression.bind(this)
+    );
     this.registerInfix(TokenType.EQUAL, this.parseInfixExpression.bind(this));
     this.registerInfix(TokenType.NOTEQ, this.parseInfixExpression.bind(this));
     this.registerInfix(TokenType.PLUS, this.parseInfixExpression.bind(this));
@@ -255,18 +267,99 @@ class Parser {
 
   currPrecedence(): number {
     let precedenceValue = precedenceTable[this.currToken.type as TokenType];
-    if (precedenceValue !== undefined) return precedenceValue;
+    if (precedenceValue) return precedenceValue;
     return OP_PREC.LOWEST;
   }
 
   peekPrecedence(): number {
     let precedenceValue = precedenceTable[this.peekToken.type as TokenType];
-    if (precedenceValue !== undefined) return precedenceValue;
+    if (precedenceValue) return precedenceValue;
     return OP_PREC.LOWEST;
+  }
+
+  parseBooleanExpression() {
+    return new Boolean(this.currToken, this.currTokenIs(TokenType.TRUE));
+  }
+
+  parseGroupedExpression(): Expression {
+    this.nextToken();
+    let expression = this.parseExpression(OP_PREC.LOWEST) as Expression;
+
+    if (!this.expectPeek(TokenType.R_PAREN)) {
+      this.errors.push(`Missing closing parentheses in expression`);
+      return new ErrorExpression(
+        this.currToken,
+        `Missing closing parentheses in expression`
+      );
+    }
+
+    return expression;
+  }
+
+  parseIfExpression() {
+    let expression = new IfStatement(this.currToken);
+
+    if (!this.expectPeek(TokenType.L_PAREN)) {
+      this.errors.push(`Expected '(' after 'if'`);
+      return new ErrorExpression(this.currToken, `Expected '(' after 'if'`);
+    }
+
+    this.nextToken();
+
+    expression.Condition = this.parseExpression(OP_PREC.LOWEST);
+
+    if (!this.expectPeek(TokenType.R_PAREN)) {
+      this.errors.push(`Expected ')' after condition`);
+      return new ErrorExpression(
+        this.currToken,
+        `Expected ')' after condition`
+      );
+    }
+
+    if (!this.expectPeek(TokenType.L_BRACE)) {
+      this.errors.push(`Expected '{' after ')'`);
+      return new ErrorExpression(this.currToken, `Expected '{' after ')'`);
+    }
+
+    expression.doBlock = this.parseBlockStatement();
+
+    if (this.peekTokenIs(TokenType.ELSE)) {
+      this.nextToken();
+
+      if (!this.expectPeek(TokenType.L_BRACE)) {
+        this.errors.push(`Expected '{' after ')'`);
+        return new ErrorExpression(this.currToken, `Expected '{' after ')'`);
+      }
+
+      expression.elseBlock = this.parseBlockStatement();
+    }
+
+    return expression;
+  }
+
+  parseBlockStatement(): BlockStatement {
+    let block = new BlockStatement(this.currToken);
+
+    this.nextToken();
+
+    while (
+      !this.currTokenIs(TokenType.R_BRACE) &&
+      !this.currTokenIs(TokenType.EOF)
+    ) {
+      let statement = this.parseStatement();
+      if (statement) block.Statements.push(statement);
+      this.nextToken();
+    }
+
+    return block;
   }
 }
 
-const parser = new Parser("5 > 4 == 3 < 4");
+const parser = new Parser(`if (a > 4) {
+                            x + 1
+                          } else {
+                            x + 3 
+                          }`);
 const program = parser.parseProgram();
 
 console.log(JSON.stringify(program.statements, null, 2));

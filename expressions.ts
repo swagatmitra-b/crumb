@@ -1,5 +1,6 @@
 import { Token, TokenType } from "./lexer";
 import { Statement, Expression } from "./ast";
+import { BlockStatement } from "./statements";
 
 export enum OP_PREC {
   _,
@@ -97,6 +98,42 @@ export class InfixExpression implements Expression {
     this.Operator = op;
     this.Left = left;
     this.Right = null;
+  }
+
+  expressionNode(): void {}
+
+  tokenLiteral(): string {
+    return this.Token.literal;
+  }
+}
+
+export class Boolean implements Expression {
+  Token: Token;
+  Value: boolean;
+
+  constructor(token: Token, val: boolean) {
+    this.Token = token;
+    this.Value = val;
+  }
+
+  expressionNode(): void {}
+
+  tokenLiteral(): string {
+    return this.Token.literal;
+  }
+}
+
+export class IfStatement implements Expression {
+  Token: Token;
+  Condition: Expression | null;
+  doBlock: BlockStatement | null;
+  elseBlock: BlockStatement | null;
+
+  constructor(token: Token) {
+    this.Token = token;
+    this.Condition = null;
+    this.doBlock = null;
+    this.elseBlock = null;
   }
 
   expressionNode(): void {}

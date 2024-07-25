@@ -32,3 +32,19 @@ export class ReturnStatement implements Statement {
 
   statementNode(): void {}
 }
+
+export class BlockStatement implements Statement {
+  Token: Token;
+  Statements: Statement[];
+
+  constructor(token: Token) {
+    this.Token = token;
+    this.Statements = [];
+  }
+
+  statementNode(): void {}
+
+  tokenLiteral(): string {
+    return this.Token.literal;
+  }
+}
