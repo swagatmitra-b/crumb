@@ -4,11 +4,13 @@ import { Identifier } from "./expressions";
 
 export class SayStatement implements Statement {
   Token: Token;
-  Name?: Identifier;
-  Value?: Expression;
+  Name: Identifier | null;
+  Value: Expression | null;
 
   constructor(token: Token) {
     this.Token = token;
+    this.Name = null;
+    this.Value = null;
   }
 
   tokenLiteral(): string {
@@ -20,10 +22,11 @@ export class SayStatement implements Statement {
 
 export class ReturnStatement implements Statement {
   Token: Token;
-  ReturnValue?: Expression;
+  ReturnValue: Expression | null;
 
   constructor(token: Token) {
     this.Token = token;
+    this.ReturnValue = null;
   }
 
   tokenLiteral(): string {

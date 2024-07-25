@@ -22,7 +22,24 @@ export const precedenceTable: Partial<Record<TokenType, OP_PREC>> = {
   [TokenType.MINUS]: OP_PREC.SUM,
   [TokenType.SLASH]: OP_PREC.PRODUCT,
   [TokenType.ASTERISK]: OP_PREC.PRODUCT,
+  [TokenType.L_PAREN]: OP_PREC.CALL,
 };
+
+export class ErrorExpression implements Expression {
+  token: Token;
+  message: string;
+
+  constructor(token: Token, message: string) {
+    this.token = token;
+    this.message = message;
+  }
+
+  expressionNode(): void {}
+
+  tokenLiteral(): string {
+    return this.token.literal;
+  }
+}
 
 export class Identifier implements Expression {
   Token: Token;
@@ -134,6 +151,42 @@ export class IfStatement implements Expression {
     this.Condition = null;
     this.doBlock = null;
     this.elseBlock = null;
+  }
+
+  expressionNode(): void {}
+
+  tokenLiteral(): string {
+    return this.Token.literal;
+  }
+}
+
+export class FunctionExpression implements Expression {
+  Token: Token;
+  Parameters: Identifier[] | ErrorExpression;
+  Body: BlockStatement | null;
+
+  constructor(token: Token) {
+    this.Token = token;
+    this.Parameters = [];
+    this.Body = null;
+  }
+
+  expressionNode(): void {}
+
+  tokenLiteral(): string {
+    return this.Token.literal;
+  }
+}
+
+export class CallExpression implements Expression {
+  Token: Token;
+  Function: Expression;
+  Arguments: Expression[] | ErrorExpression;
+
+  constructor(token: Token, fn: Expression) {
+    this.Token = token;
+    this.Function = fn;
+    this.Arguments = [];
   }
 
   expressionNode(): void {}

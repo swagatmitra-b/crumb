@@ -200,9 +200,13 @@ const keywords: Record<string, TokenType> = {
   if: TokenType.IF,
   else: TokenType.ELSE,
   return: TokenType.RETURN,
+  fun: TokenType.FUN,
 };
 
-// const lexeme = new Lexer("say love = 23 + a");
+// const lexeme = new Lexer(`fun (a, b) {
+//                           say sum = a + 2*b;
+//                           return sum    
+//                           };`);
 
 // while (true) {
 //   let token = lexeme.nextToken();

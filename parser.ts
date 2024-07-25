@@ -2,6 +2,7 @@ import { Token, Lexer, TokenType } from "./lexer";
 import { ASTNode, Statement, Expression } from "./ast";
 import { SayStatement, ReturnStatement, BlockStatement } from "./statements";
 import {
+  ErrorExpression,
   Identifier,
   ExpressionStatement,
   IntegerLiteral,
@@ -11,6 +12,8 @@ import {
   precedenceTable,
   Boolean,
   IfStatement,
+  FunctionExpression,
+  CallExpression,
 } from "./expressions";
 
 class Program implements ASTNode {
@@ -32,22 +35,6 @@ interface parsingFunctions {
   infixParse(a: Expression): Expression;
 }
 
-class ErrorExpression implements Expression {
-  token: Token;
-  message: string;
-
-  constructor(token: Token, message: string) {
-    this.token = token;
-    this.message = message;
-  }
-
-  expressionNode(): void {}
-
-  tokenLiteral(): string {
-    return this.token.literal;
-  }
-}
-
 class Parser {
   lexer: Lexer;
   currToken: Token;
@@ -65,7 +52,6 @@ class Parser {
     this.prefixParseFuncs = {};
     this.infixParseFuncs = {};
     this.registerPrefix(TokenType.IDENTIFIER, this.parseIdentifier.bind(this));
-    this.registerPrefix(TokenType.IF, this.parseIfExpression.bind(this));
     this.registerPrefix(TokenType.NUMBER, this.parseNumberLiteral.bind(this));
     this.registerPrefix(TokenType.BANG, this.parsePrefixExpression.bind(this));
     this.registerPrefix(TokenType.MINUS, this.parsePrefixExpression.bind(this));
@@ -78,6 +64,8 @@ class Parser {
       TokenType.L_PAREN,
       this.parseGroupedExpression.bind(this)
     );
+    this.registerPrefix(TokenType.IF, this.parseIfExpression.bind(this));
+    this.registerPrefix(TokenType.FUN, this.parseFunctionExpression.bind(this));
     this.registerInfix(TokenType.EQUAL, this.parseInfixExpression.bind(this));
     this.registerInfix(TokenType.NOTEQ, this.parseInfixExpression.bind(this));
     this.registerInfix(TokenType.PLUS, this.parseInfixExpression.bind(this));
@@ -89,6 +77,7 @@ class Parser {
     this.registerInfix(TokenType.SLASH, this.parseInfixExpression.bind(this));
     this.registerInfix(TokenType.GT, this.parseInfixExpression.bind(this));
     this.registerInfix(TokenType.LT, this.parseInfixExpression.bind(this));
+    this.registerInfix(TokenType.L_PAREN, this.parseCallExpression.bind(this));
     this.nextToken();
     this.nextToken();
   }
@@ -103,14 +92,14 @@ class Parser {
 
     while (!this.currTokenIs(TokenType.EOF)) {
       let statement = this.parseStatement();
-      if (statement) program.statements.push(statement);
+      if (statement) program.statements.push(statement as Statement);
       this.nextToken();
     }
 
     return program;
   }
 
-  parseStatement(): Statement | null {
+  parseStatement(): Statement | ErrorExpression {
     switch (this.currToken.type) {
       case TokenType.SAY:
         return this.parseSayStatement();
@@ -121,16 +110,36 @@ class Parser {
     }
   }
 
-  parseSayStatement(): SayStatement | null {
+  parseSayStatement(): SayStatement | ErrorExpression {
     let statement = new SayStatement(this.currToken);
 
-    if (!this.expectPeek(TokenType.IDENTIFIER)) return null;
+    if (!this.expectPeek(TokenType.IDENTIFIER)) {
+      this.errors.push(
+        `Expected identifier after 'let', got ${this.peekToken} instead`
+      );
+      return new ErrorExpression(
+        this.currToken,
+        `Expected identifier after 'let', got ${this.peekToken} instead`
+      );
+    }
 
     statement.Name = new Identifier(this.currToken, this.currToken.literal);
 
-    if (!this.expectPeek(TokenType.ASSIGN)) return null;
+    if (!this.expectPeek(TokenType.ASSIGN)) {
+      this.errors.push(
+        `Expected '=' after identifier, got ${this.peekToken} instead`
+      );
+      return new ErrorExpression(
+        this.currToken,
+        `Expected '=' after , got ${this.peekToken} instead`
+      );
+    }
 
-    while (this.currTokenIs(TokenType.SCOLON)) this.nextToken();
+    this.nextToken();
+
+    statement.Value = this.parseExpression(OP_PREC.LOWEST);
+
+    if (this.peekTokenIs(TokenType.SCOLON)) this.nextToken();
 
     return statement;
   }
@@ -140,7 +149,9 @@ class Parser {
 
     this.nextToken();
 
-    while (this.currTokenIs(TokenType.SCOLON)) this.nextToken();
+    statement.ReturnValue = this.parseExpression(OP_PREC.LOWEST);
+
+    if (this.peekTokenIs(TokenType.SCOLON)) this.nextToken();
 
     return statement;
   }
@@ -347,19 +358,106 @@ class Parser {
       !this.currTokenIs(TokenType.EOF)
     ) {
       let statement = this.parseStatement();
-      if (statement) block.Statements.push(statement);
+      if (statement) block.Statements.push(statement as Statement);
       this.nextToken();
     }
 
     return block;
   }
+
+  parseFunctionExpression() {
+    let expression = new FunctionExpression(this.currToken);
+
+    if (!this.expectPeek(TokenType.L_PAREN)) {
+      this.errors.push(`Expected '(' after 'fun'`);
+      return new ErrorExpression(this.currToken, `Expected '(' after 'fun'`);
+    }
+
+    expression.Parameters = this.parseFunctionParams();
+
+    if (!this.expectPeek(TokenType.L_BRACE)) {
+      this.errors.push(`Expected '{' after function declaration`);
+      return new ErrorExpression(
+        this.currToken,
+        `Expected '{' after function declaration`
+      );
+    }
+
+    expression.Body = this.parseBlockStatement();
+
+    return expression;
+  }
+
+  parseFunctionParams(): Identifier[] | ErrorExpression {
+    let identifiers = new Array<Identifier>();
+
+    if (this.peekTokenIs(TokenType.R_PAREN)) {
+      this.nextToken();
+      return identifiers;
+    }
+
+    this.nextToken();
+
+    while (this.peekTokenIs(TokenType.COMMA)) {
+      let ident = new Identifier(this.currToken, this.currToken.literal);
+      identifiers.push(ident);
+
+      this.nextToken();
+      this.nextToken();
+    }
+
+    if (!this.expectPeek(TokenType.R_PAREN)) {
+      this.errors.push(
+        `Expected closing parentheses ')' in function signature`
+      );
+      return new ErrorExpression(
+        this.currToken,
+        `Expected closing parentheses ')' in function signature`
+      );
+    }
+
+    return identifiers;
+  }
+
+  parseCallExpression(fn: Expression) {
+    let expression = new CallExpression(this.currToken, fn);
+
+    expression.Arguments = this.parseCallArguments();
+
+    return expression;
+  }
+
+  parseCallArguments() {
+    let args = new Array<Expression>();
+
+    if (this.peekTokenIs(TokenType.R_PAREN)) {
+      this.nextToken();
+      return args;
+    }
+
+    this.nextToken();
+    args.push(this.parseExpression(OP_PREC.LOWEST) as Expression);
+
+    while (this.peekTokenIs(TokenType.COMMA)) {
+      this.nextToken();
+      this.nextToken();
+      args.push(this.parseExpression(OP_PREC.LOWEST) as Expression);
+    }
+
+    if (!this.expectPeek(TokenType.R_PAREN)) {
+      this.errors.push("Expected closing parentheses ')' after function call");
+      return new ErrorExpression(
+        this.currToken,
+        "Expected closing parentheses ')' after function call"
+      );
+    }
+
+    return args;
+  }
 }
 
-const parser = new Parser(`if (a > 4) {
-                            x + 1
-                          } else {
-                            x + 3 
-                          }`);
+const parser = new Parser(`add(a + b + c * d / f + g)`);
+
 const program = parser.parseProgram();
 
 console.log(JSON.stringify(program.statements, null, 2));
