@@ -110,8 +110,8 @@ export class Lexer {
         if (this.peekChar() == "=") {
           let char = this.char;
           this.readChar();
-          token = this.#newToken(TokenType.NOTEQ, this.char + char);
-        } else token = this.#newToken(TokenType.ASSIGN, this.char);
+          token = this.#newToken(TokenType.NOTEQ, char + this.char);
+        } else token = this.#newToken(TokenType.BANG, this.char);
         break;
       case "\0":
         token = this.#newToken(TokenType.EOF, "");
@@ -203,10 +203,7 @@ const keywords: Record<string, TokenType> = {
   fun: TokenType.FUN,
 };
 
-// const lexeme = new Lexer(`fun (a, b) {
-//                           say sum = a + 2*b;
-//                           return sum    
-//                           };`);
+// const lexeme = new Lexer(`!5`);
 
 // while (true) {
 //   let token = lexeme.nextToken();
