@@ -22,7 +22,7 @@ export const precedenceTable: Partial<Record<TokenType, OP_PREC>> = {
   [TokenType.MINUS]: OP_PREC.SUM,
   [TokenType.SLASH]: OP_PREC.PRODUCT,
   [TokenType.ASTERISK]: OP_PREC.PRODUCT,
-  [TokenType.L_PAREN]: OP_PREC.CALL,
+  [TokenType.L_PAREN]: OP_PREC.CALL
 };
 
 export class ErrorExpression implements Expression {
@@ -71,7 +71,7 @@ export class ExpressionStatement implements Statement {
   }
 }
 
-export class IntegerLiteral implements Expression {
+export class NumberLiteral implements Expression {
   Token: Token;
   Value: number | null;
 
@@ -140,7 +140,7 @@ export class Boolean implements Expression {
   }
 }
 
-export class IfStatement implements Expression {
+export class IfExpression implements Expression {
   Token: Token;
   Condition: Expression | null;
   doBlock: BlockStatement | null;

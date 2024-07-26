@@ -5,18 +5,18 @@ import {
   ErrorExpression,
   Identifier,
   ExpressionStatement,
-  IntegerLiteral,
+  NumberLiteral,
   PrefixExpression,
   InfixExpression,
   OP_PREC,
   precedenceTable,
   Boolean,
-  IfStatement,
+  IfExpression,
   FunctionExpression,
   CallExpression,
 } from "./expressions";
 
-class Program implements ASTNode {
+export class Program implements ASTNode {
   statements: Statement[];
 
   constructor() {
@@ -35,7 +35,7 @@ interface parsingFunctions {
   infixParse(a: Expression): Expression;
 }
 
-class Parser {
+export class Parser {
   lexer: Lexer;
   currToken: Token;
   peekToken: Token;
@@ -227,7 +227,7 @@ class Parser {
   }
 
   parseNumberLiteral(): Expression {
-    let literal = new IntegerLiteral(this.currToken);
+    let literal = new NumberLiteral(this.currToken);
 
     const numLiteral = parseInt(this.currToken.literal);
 
@@ -308,7 +308,7 @@ class Parser {
   }
 
   parseIfExpression() {
-    let expression = new IfStatement(this.currToken);
+    let expression = new IfExpression(this.currToken);
 
     if (!this.expectPeek(TokenType.L_PAREN)) {
       this.errors.push(`Expected '(' after 'if'`);
@@ -456,8 +456,8 @@ class Parser {
   }
 }
 
-const parser = new Parser(`add(a + b + c * d / f + g)`);
+// const parser = new Parser(``);
 
-const program = parser.parseProgram();
+// const program = parser.parseProgram();
 
-console.log(JSON.stringify(program.statements, null, 2));
+// console.log(JSON.stringify(program.statements, null, 2));
